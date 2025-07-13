@@ -1,0 +1,75 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version'
+        required: true
+        type: number
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      issues: write
+    env:
+      REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+      IMAGE_NAME: app
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: releases/${{ github.event.inputs.release_version }}
+        fetch-depth: 0
+
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: cr.yandex
+        username: json_key
+        password: ${{ secrets.YC_SA_KEY }}
+
+    - name: Verify Docker Image
+      id: check_image
+      run: |
+        IMAGE_TAG="${{ github.event.inputs.release_version }}_latest"
+        IMAGE_FULL_NAME="cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}"
+        docker pull $IMAGE_FULL_NAME:$IMAGE_TAG
+      shell: bash
+
+    - name: Deploy
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_KEY }}
+        script: |
+          IMAGE_FULL_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/app"
+          docker pull $IMAGE_FULL_NAME:${{ github.event.inputs.release_version }}_latest
+          docker stop app || true
+          docker rm app || true
+          docker run -d --name app -p 3000:3000 $IMAGE_FULL_NAME:${{ github.event.inputs.release_version }}_latest
+
+    - name: Add Comment to Issue
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        RELEASE_VERSION=${{ github.event.inputs.release_version }}
+        DEPLOYER=${{ github.actor }}
+        DEPLOY_DATE=$(date +'%Y-%m-%d %H:%M:%S %Z')
+
+        ISSUE_NUMBER=$(gh issue list --search "Release v$RELEASE_VERSION" --json number --jq '.[0].number')
+
+        if [ -z "$ISSUE_NUMBER" ]; then
+          echo "No issue found for Release v$RELEASE_VERSION"
+        else
+          gh issue comment $ISSUE_NUMBER --body "\
+          ### Релиз (v$RELEASE_VERSION) выкачен в прод\n\n\
+          - **Дата выкатки:** ${DEPLOY_DATE}\n\
+          - **Выкатил:** ${DEPLOYER}\n\
+          "
+        fi
+      shell: bash 
