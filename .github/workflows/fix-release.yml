@@ -64,15 +64,15 @@ jobs:
           RELEASE_VERSION=${{ github.event.inputs.release_version }}
           FIX_RUN_NUMBER=${{ github.run_number }}
           IMAGE_BASE_NAME="cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}"
-          docker build -t "$IMAGE_BASE_NAME:$RELEASE_VERSION_fix$FIX_RUN_NUMBER" -t "$IMAGE_BASE_NAME:$RELEASE_VERSION_latest" .
+          docker build -t "$IMAGE_BASE_NAME:${RELEASE_VERSION}_fix$FIX_RUN_NUMBER" -t "$IMAGE_BASE_NAME:${RELEASE_VERSION}_latest" .
 
       - name: Push Docker Image
         run: |
           RELEASE_VERSION=${{ github.event.inputs.release_version }}
           FIX_RUN_NUMBER=${{ github.run_number }}
           IMAGE_BASE_NAME="cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}"
-          docker push "$IMAGE_BASE_NAME:$RELEASE_VERSION_fix$FIX_RUN_NUMBER"
-          docker push "$IMAGE_BASE_NAME:$RELEASE_VERSION_latest"
+          docker push "$IMAGE_BASE_NAME:${RELEASE_VERSION}_fix$FIX_RUN_NUMBER"
+          docker push "$IMAGE_BASE_NAME:${RELEASE_VERSION}_latest"
 
       - name: Get latest relevant tag
         id: get_latest_tag
