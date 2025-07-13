@@ -102,6 +102,16 @@ jobs:
           ${{ steps.get_commits.outputs.COMMIT_LIST }}
           "
 
+      - name: Create Git Tag
+        run: |
+          git tag -a v${{ github.run_number }} -m "Release v${{ github.run_number }}"
+          git push origin v${{ github.run_number }}
+
+      - name: Create Release Branch
+        run: |
+          git checkout -b releases/${{ github.run_number }}
+          git push origin releases/${{ github.run_number }}
+
       - name: Update CHANGELOG.md
         id: update_changelog
         run: |
@@ -121,13 +131,3 @@ jobs:
           git add CHANGELOG.md
           git commit -m "docs: Update CHANGELOG for v${{ github.run_number }}"
           git push
-
-      - name: Create Git Tag
-        run: |
-          git tag -a v${{ github.run_number }} -m "Release v${{ github.run_number }}"
-          git push origin v${{ github.run_number }}
-
-      - name: Create Release Branch
-        run: |
-          git checkout -b releases/${{ github.run_number }}
-          git push origin releases/${{ github.run_number }}
