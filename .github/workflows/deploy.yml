@@ -46,9 +46,7 @@ jobs:
         host: ${{ secrets.DEPLOY_HOST }}
         username: ${{ secrets.DEPLOY_USER }}
         key: ${{ secrets.DEPLOY_KEY }}
-        envs: YC_SA_KEY_CONTENT=${{ secrets.YC_SA_KEY }}
         script: |
-          echo "$YC_SA_KEY_CONTENT" | docker login --username json_key --password-stdin cr.yandex
           IMAGE_FULL_NAME="cr.yandex/${{ secrets.YC_REGISTRY_ID }}/app"
           docker pull $IMAGE_FULL_NAME:${{ github.event.inputs.release_version }}_latest
           docker stop app || true
